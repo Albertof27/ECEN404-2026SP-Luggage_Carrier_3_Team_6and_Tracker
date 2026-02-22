@@ -5,6 +5,8 @@ import android.bluetooth.*
 import android.bluetooth.le.*
 import android.content.Context
 import android.os.ParcelUuid
+import android.os.Handler
+import android.os.Looper
 import io.flutter.plugin.common.MethodChannel
 //so you can go through UUID's
 import java.util.UUID
@@ -27,6 +29,15 @@ class RoverBle(
     private var pendingRead: MethodChannel.Result? = null
     private var pendingWrite: MethodChannel.Result? = null
     private var pendingRssi: MethodChannel.Result? = null
+
+
+
+
+    private fun safeEmit(data: Map<String, Any?>) {
+    Handler(Looper.getMainLooper()).post {
+        emit(data)
+    }
+}
 
     // -------- Scanning --------
     //this starts scanning and it's looking for uuids
@@ -65,7 +76,7 @@ class RoverBle(
     //this will list out the scanned rover details to the user
     private val scanCb = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, res: ScanResult) {
-            emit(
+            safeEmit(
                 mapOf(
                     "type" to "scanResult",
                     "id" to res.device.address,
@@ -75,7 +86,7 @@ class RoverBle(
         }
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         override fun onScanFailed(errorCode: Int) {
-            emit(mapOf("type" to "scanError", "code" to errorCode))
+            safeEmit(mapOf("type" to "scanError", "code" to errorCode))
         }
     }
 
@@ -84,7 +95,7 @@ class RoverBle(
     fun connect(id: String) {
         stopScan()
         //gatt = adapter.getRemoteDevice(id).connectGatt(activity, false, gattCb)
-        gatt = adapter.getRemoteDevice(id).connectGatt(context, false, gattCb)
+        gatt = adapter.getRemoteDevice(id).connectGatt(context, false, gattCb, BluetoothDevice.TRANSPORT_LE)
         emit(mapOf("type" to "connState", "state" to "connecting"))
     }
     //this disconnects the sesh to avoid leaks and so it can reconnect to something else
@@ -99,29 +110,33 @@ class RoverBle(
         //the function checks to see if anything is connected and if it is then it displays services and characterstics by emitting a "map" back to the dart side
         override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
             if (status != BluetoothGatt.GATT_SUCCESS) {
-                emit(mapOf("type" to "connError", "status" to status))
-                emit(mapOf("type" to "connState", "state" to "disconnected"))
+                g.close() 
+                if (gatt == g) gatt = null
+                safeEmit(mapOf("type" to "connError", "status" to status))
+                safeEmit(mapOf("type" to "connState", "state" to "disconnected"))
                 return
             }
             //handles when it goes from connected to disconnected or a new state and sends info to the app
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                emit(mapOf("type" to "connState", "state" to "connected"))
+                safeEmit(mapOf("type" to "connState", "state" to "connected"))
                 g.discoverServices()
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                emit(mapOf("type" to "connState", "state" to "disconnected"))
+                g.close()
+                if (gatt == g) gatt = null
+                safeEmit(mapOf("type" to "connState", "state" to "disconnected"))
             }
         }
         //this function is good for troubleshooting because it says if the discovery is done
         override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                emit(mapOf("type" to "services", "count" to g.services.size))
+                safeEmit(mapOf("type" to "services", "count" to g.services.size))
             } else {
-                emit(mapOf("type" to "servicesError", "status" to status))
+                safeEmit(mapOf("type" to "servicesError", "status" to status))
             }
         }
         //this is the function that would actually send the rover data to the user app
         override fun onCharacteristicChanged(g: BluetoothGatt, c: BluetoothGattCharacteristic) {
-            emit(
+            safeEmit(
                 mapOf(
                     "type" to "notify",
                     "svc" to c.service.uuid.toString(),
@@ -137,10 +152,27 @@ class RoverBle(
             c: BluetoothGattCharacteristic,
             status: Int
         ) {
+
+            val result = pendingRead
+            pendingRead = null
+            val bytes = c.value?.toList() ?: emptyList<Int>()
+
+
+            Handler(Looper.getMainLooper()).post {
+                    if (status == BluetoothGatt.GATT_SUCCESS) {
+                        result?.success(bytes)
+                        emit(mapOf("type" to "read", "svc" to c.service.uuid.toString(), "chr" to c.uuid.toString(), "val" to bytes))
+                    } else {
+                        result?.error("ble", "read status $status", null)
+                    }
+                }
+            }
+
+/* 
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 val bytes = c.value?.toList() ?: emptyList<Int>()
                 pendingRead?.success(bytes)
-                emit(
+                safeEmit(
                     mapOf(
                         "type" to "read",
                         "svc" to c.service.uuid.toString(),
@@ -154,12 +186,26 @@ class RoverBle(
             //always clear out the varible so it doesnt break later
             pendingRead = null
         }
+        */
 
         override fun onCharacteristicWrite(
             g: BluetoothGatt,
             c: BluetoothGattCharacteristic,
             status: Int
         ) {
+
+            val result = pendingWrite
+            pendingWrite = null
+
+            Handler(Looper.getMainLooper()).post {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                result?.success(null)
+            } else {
+                result?.error("ble", "write status $status", null)
+            }
+        }
+    }
+    /* 
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 pendingWrite?.success(null)
             } else {
@@ -167,14 +213,23 @@ class RoverBle(
             }
             pendingWrite = null
         }
+         */
 
         override fun onReadRemoteRssi(g: BluetoothGatt, rssi: Int, status: Int) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                pendingRssi?.success(rssi)
-                emit(mapOf("type" to "rssi", "value" to rssi))
-            } else {
-                pendingRssi?.error("ble", "rssi status $status", null)
+            val result = pendingRssi
+            pendingRssi = null
+
+            Handler(Looper.getMainLooper()).post {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    result?.success(rssi)
+                    emit(mapOf("type" to "rssi", "value" to rssi))
+                } else {
+                    result?.error("ble", "rssi status $status", null)
+                }
             }
+            
+
+
             pendingRssi = null
         }
     }

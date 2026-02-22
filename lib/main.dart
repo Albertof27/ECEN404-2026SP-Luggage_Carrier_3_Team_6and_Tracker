@@ -54,7 +54,7 @@ class MyApp extends ConsumerWidget {
       ),
       // Display login screen or home depending on auth state
       home: auth.when(
-        data: (user) => user == null ? const LoginScreen() : const RoverHome(),
+        data: (user) => user == null ? const LoginScreen() : RoverHome(),
         loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),

@@ -18,8 +18,21 @@ class BleBridge {
   static Future<void> requestPermissions() =>
     _m.invokeMethod('requestPermissions');
   //This is when the app starts scanning for the BLE signal
+
+
   static Future<void> startScan({List<String> serviceUuids = const []}) =>
-    _m.invokeMethod('startScan', {'services': serviceUuids});
+  _m.invokeMethod('startScan', {
+    'serviceUuids': serviceUuids, //  match Kotlin side
+  });
+
+
+  //static Future<void> startScan({List<String> serviceUuids = const []}) =>
+    //_m.invokeMethod('startScan', {'services': serviceUuids});
+
+
+
+
+
   //this will tell the app to stop scanning and also invoke method is just the function that allows dart to talk to android
   static Future<void> stopScan() => _m.invokeMethod('stopScan');
   //this part asks the android to connect a device(the esp32) 

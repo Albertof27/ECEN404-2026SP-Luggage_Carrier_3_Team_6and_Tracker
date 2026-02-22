@@ -57,6 +57,30 @@ class MainActivity : FlutterActivity() {
                         ActivityCompat.requestPermissions(this, perms.toTypedArray(), 2000)
                      result.success(null)
                 }
+
+
+                //fakeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+
+
+"startScan" -> {
+    // Match Dart: BleBridge.startScan(serviceUuids: [...])
+    val services = call.argument<List<String>>("serviceUuids") ?: emptyList()
+
+    // Create RoverBle once, reuse afterwards
+    ble = ble ?: RoverBle(this) { payload -> sink?.success(payload) }
+
+    // Safe call here; ble is non-null at this point, but no need for !!
+    ble?.startScan(services)
+
+    result.success(null)
+}
+
+
+//fakeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+
+
+
+/* 
                 //the dart dunction start scan is called
                  "startScan" -> {
                     //gets all the UIDS to filter scan
@@ -75,6 +99,15 @@ class MainActivity : FlutterActivity() {
                     //the payload is in dart now
                     result.success(null)
                  }
+
+*/
+
+
+
+
+
+
+
                  //this stops scanning
                  "stopScan" -> { ble?.stopScan(); result.success(null) }
                  //connects to the device with the id

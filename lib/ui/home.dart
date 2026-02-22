@@ -6,10 +6,12 @@ import 'package:rover_app/state/ble_state.dart';
 import 'package:rover_app/state/ble_controller_provider.dart' as providers;
 import 'package:rover_app/ui/trip_logger_page.dart';
 import 'package:rover_app/ui/profile_page.dart';
+//import '../state/diagnostics.dart';
 import '../state/auth_providers.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:rover_app/app_services.dart';
 import 'package:rover_app/models/trip.dart';
+ 
 
 
 
@@ -97,23 +99,6 @@ class TripsDistanceChart extends StatelessWidget {
             ),
           ),
 
-         /* leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 60,
-              getTitlesWidget: (value, meta) => Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: Text(
-                  value.toStringAsFixed(2),
-                  // ✅ use the outer build context here
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            ),
-          ),
-*/
-
-
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -146,7 +131,13 @@ class TripsDistanceChart extends StatelessWidget {
 
 
 class RoverHome extends ConsumerWidget {
+  
   const RoverHome({super.key});
+/*
+    Future<void> runBleSelfTest(WidgetRef ref) {
+    return diag.runBleSelfTest(ref);
+  }
+  */
   
 
   @override
@@ -179,6 +170,11 @@ class RoverHome extends ConsumerWidget {
         title: const Text('Rover Status'),
         actions: [
 
+
+
+
+
+
           IconButton(
             icon: const Icon(Icons.person),
             tooltip: 'Profile',
@@ -198,6 +194,10 @@ class RoverHome extends ConsumerWidget {
               );
             },
           ),
+
+
+
+
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Log out',
@@ -212,15 +212,6 @@ class RoverHome extends ConsumerWidget {
           ),
         ],
       ),
-
-
-
-
-
-
-
-
-
 
             body: SingleChildScrollView(
         child: Center(
@@ -313,6 +304,9 @@ class RoverHome extends ConsumerWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
+
+
+
                             ElevatedButton.icon(
                               onPressed: conn == 'connected' ? null : () => ble.scanAndConnect(),
                               icon: const Icon(Icons.bluetooth_searching),
@@ -323,12 +317,46 @@ class RoverHome extends ConsumerWidget {
                               icon: const Icon(Icons.link_off),
                               label: const Text('Disconnect'),
                             ),
+
+
+
                           ],
                         ),
                       ],
                     ),
                   ),
                 ),
+
+                  // --- NEW: SELF TEST BUTTON ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.play_circle_outline),
+                        label: const Text('Run Rover Test'),
+                        onPressed: () async {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Running Rover self-test...')),
+                          );
+
+                          //await diag.runBleSelfTest(ref);
+                          await runBleSelfTest(ref);
+                          
+
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Self-test complete')),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
 
                 // --- NEW: TRIPS DISTANCE GRAPH CARD ---
                 Consumer(
@@ -382,6 +410,54 @@ class RoverHome extends ConsumerWidget {
                     );
                   },
                 ),
+
+
+
+
+
+// --- BIG PROFILE + TRIP LOGGER BUTTONS BELOW GRAPH ---
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 16),
+  child: Row(
+    children: [
+      Expanded(
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            textStyle: const TextStyle(fontSize: 18),
+          ),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfilePage()),
+            );
+          },
+          child: const Text("Profile"),
+        ),
+      ),
+      const SizedBox(width: 16),
+      Expanded(
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            textStyle: const TextStyle(fontSize: 18),
+          ),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const TripLoggerPage()),
+            );
+          },
+          child: const Text("Trip Logger"),
+        ),
+      ),
+    ],
+  ),
+),
+const SizedBox(height: 24),
+
+
+
+
+
               ],
             ),
           ),
@@ -389,118 +465,6 @@ class RoverHome extends ConsumerWidget {
       ),
 
 
-
-
-
-
-      
-     /* body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Card(
-            elevation: 2,
-            margin: const EdgeInsets.all(16),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Connection pill
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: statusColor().withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: statusColor(), width: 1),
-                    ),
-                    child: Text(
-                      'Connection: $conn',
-                      style: TextStyle(
-                        color: statusColor(),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // RSSI & Distance
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('RSSI', style: Theme.of(context).textTheme.bodyLarge),
-                      Text(rssi == null ? '-- dBm' : '$rssi dBm'),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Distance', style: Theme.of(context).textTheme.bodyLarge),
-                      Text(distance == null ? '-- m' : '${distance.toStringAsFixed(2)} m'),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('6-ft Status', style: Theme.of(context).textTheme.bodyLarge),
-                      Text(
-                        outRange ? 'OUT OF RANGE' : 'OK',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: outRange ? Colors.red : Colors.green,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Weight', style: Theme.of(context).textTheme.bodyLarge),
-                      Text(weightStr), // e.g., "13.4 lbs"
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  //overload
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Overloaded?', style: Theme.of(context).textTheme.bodyLarge),
-                      Text(
-                        overloaded ? 'YES (> ${threshold.toStringAsFixed(1)} lb)' : 'No',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: overloaded ? Colors.red : Colors.green,
-                        ),
-                      ),
-                    ],
-                  ),
-
-
-
-                  const SizedBox(height: 24),
-                  // Actions
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: conn == 'connected' ? null : () => ble.scanAndConnect(),
-                        icon: const Icon(Icons.bluetooth_searching),
-                        label: const Text('Scan & Connect'),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: conn == 'connected' ? () => ble.disconnect() : null,
-                        icon: const Icon(Icons.link_off),
-                        label: const Text('Disconnect'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),*/
     );
 
 
@@ -508,5 +472,36 @@ class RoverHome extends ConsumerWidget {
   }
 }
 
+
+
+Future<void> runBleSelfTest(WidgetRef ref) async {
+  // 1) Start in a normal state
+  ref.read(weightThresholdProvider.notifier).state = 20.0;
+  ref.read(weightProvider.notifier).state = 10.0;
+  ref.read(rssiProvider.notifier).state = -60; // strong signal, close
+
+  // Let UI settle
+  await Future.delayed(const Duration(seconds: 1));
+
+  // 2) Go overweight (user should see overload color / icon)
+  ref.read(weightProvider.notifier).state = 25.0;
+  await Future.delayed(const Duration(seconds: 2));
+
+  // 3) Back under limit
+  ref.read(weightProvider.notifier).state = 15.0;
+  await Future.delayed(const Duration(seconds: 2));
+
+  // 4) Simulate going out of range (weak RSSI -> big distance)
+  ref.read(rssiProvider.notifier).state = -80;
+  await Future.delayed(const Duration(seconds: 2));
+
+  // 5) Back in range
+  ref.read(rssiProvider.notifier).state = -60;
+  await Future.delayed(const Duration(seconds: 1));
+
+  // Optional: restore "normal" defaults
+  ref.read(weightProvider.notifier).state = 0.0;
+  ref.read(rssiProvider.notifier).state = null;
+}
 
 

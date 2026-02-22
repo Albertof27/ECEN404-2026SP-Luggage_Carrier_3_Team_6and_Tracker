@@ -2,6 +2,7 @@ import 'dart:async';
 //brings in important librarries that allow you to subscribe to a ble event stream
 import 'dart:typed_data';
 //this allows you to decode notifications from the rover since they will be in bytes so it needs to be translated using things in this import
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 //this handles the read and write functions for the rover 
@@ -19,6 +20,8 @@ const String chrEvents = 'b3a1f6d4-37db-4e7c-a7ac-b3e74c3f8e6a';
 
 /// Device name filter you expect in advertisements.
 const String kTargetNameContains = 'Rover-01';
+//const String kTargetNameContains = '';
+
 
 /// Controller that listens to native BLE events and updates Riverpod state.
 class BleController {
@@ -67,6 +70,48 @@ class BleController {
 
 
   // ---------------- Public API ----------------
+
+///FAKEEEEEEEEEEEEE
+Future<void> scanAndConnect() async {
+
+  Map<Permission, PermissionStatus> statuses = await [
+    Permission.bluetoothScan,
+    Permission.bluetoothConnect,
+    Permission.location,
+    Permission.notification, // Request this early so it doesn't pop up later
+  ].request();
+
+  
+if (statuses[Permission.bluetoothScan]?.isDenied ?? true) {
+    ref.read(connectionStateProvider.notifier).state = 'perm-denied';
+    return;
+  }
+
+  ref.read(connectionStateProvider.notifier).state = 'scanning';
+  
+
+
+  // TEMP: scan for EVERYTHING (no UUID filter)
+  try {
+    // 4. Start the scan (No redundant requestPermissions call here)
+    await BleBridge.startScan(serviceUuids: []); 
+
+    _scanTimer?.cancel();
+    _scanTimer = Timer(const Duration(seconds: 15), () async {
+      await BleBridge.stopScan();
+      if (!_connectingOrConnected) {
+        ref.read(connectionStateProvider.notifier).state = 'not-found';
+      }
+    });
+  } catch (e) {
+    print("📱 Scan Error: $e");
+    ref.read(connectionStateProvider.notifier).state = 'scan-error';
+  }
+
+}
+//FAKEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+
+  /*
   //this is what you ui calls
   Future<void> scanAndConnect() async {
     // 1) Permissions are asked and if it fails it will let you know
@@ -90,6 +135,12 @@ class BleController {
       }
     });
   }
+*/
+
+
+
+
+
   //this kills the scan if its not scanning anything to free up resources
   Future<void> disconnect() async {
     _scanTimer?.cancel();
@@ -117,18 +168,39 @@ class BleController {
         // i can put another message here to know that the scan started if i want to possibly update ui
         break;
       //this is for when a device was found and you check the name, if the name matches you stop scanning and conect the id to prevent multiple connects 
+
+
+
+
+
       case 'scanResult':
         final name = (m['name'] as String?) ?? '';
+        final id = m['id'] as String?;
+
+        print('📱 [BLE] Found device: name="$name", id="$id"');
         if (!_connectingOrConnected &&
             name.contains(kTargetNameContains)) {
+          print('📱 [BLE] Matching device! Connecting to: $name');
           _connectingOrConnected = true;
           // Stop scanning and connect once.
           BleBridge.stopScan();
+
+          () async {
+            print('📱 [BLE] Waiting for hardware cooldown...');
+            await Future.delayed(const Duration(milliseconds: 500));
           final id = m['id'] as String;
-          BleBridge.connect(id);
+          print('📱 [BLE] Sending connect command to ID: $id');
+          
+          BleBridge.connect(id!);
           ref.read(connectionStateProvider.notifier).state = 'connecting';
+          }();
         }
         break;
+
+
+
+
+
       //this function is when the connection state changed, so this will update the ui on whether the state is connected/disconnected and avoids 
       //enabling notify before the services exsist
       case 'connState':
