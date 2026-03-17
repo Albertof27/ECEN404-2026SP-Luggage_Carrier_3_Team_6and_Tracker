@@ -9,6 +9,9 @@ import 'package:rover_app/app_services.dart';
 import 'package:rover_app/models/trip.dart';
 import 'package:rover_app/models/track_point.dart';
 import 'package:rover_app/utils/geo.dart';
+import 'package:rover_app/state/ble_controller_provider.dart';
+//import 'package:rover_app/ble_controller.dart';
+
 
 // --- Riverpod Providers (Assumed setup) ---
 // 1. Provides the stream of ALL trips (sorted by date)
@@ -242,7 +245,14 @@ Future<void> _startRecording(BuildContext context, WidgetRef ref) async {
       : inputName;
 
   // 3) Call recorder with that name
-  final id = await AppServices.I.recorder.start(name);
+  final id = await AppServices.I.recorder.start(name,
+    onLocationUpdate: (lat, lon) {
+      // Every time the recorder saves a valid point, send it to the Pi
+      ref.read(bleControllerProvider).sendLocation(lat, lon);
+    },
+    );
+
+
 
   if (id == null) {
     if (!context.mounted) return;

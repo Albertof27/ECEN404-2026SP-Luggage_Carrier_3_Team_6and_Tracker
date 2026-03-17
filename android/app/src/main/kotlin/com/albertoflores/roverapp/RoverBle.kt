@@ -126,7 +126,7 @@ class RoverBle(
                 safeEmit(mapOf("type" to "connState", "state" to "disconnected"))
             }
         }
-        //this function is good for troubleshooting because it says if the discovery is done
+        //this function is good for troubleshooting because it says if the discovery is done  
         override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 safeEmit(mapOf("type" to "services", "count" to g.services.size))

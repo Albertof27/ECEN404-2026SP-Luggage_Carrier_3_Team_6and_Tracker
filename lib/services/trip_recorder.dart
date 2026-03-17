@@ -39,7 +39,7 @@ class TripRecorder {
     return enabled;
   }
 
-  Future<String?> start(String name) async {
+  Future<String?> start(String name, {void Function(double lat, double lon)? onLocationUpdate}) async {
    // print('[TripRecorder] start("$name") called');
     
 
@@ -114,6 +114,11 @@ class TripRecorder {
         await repo.insertPoint(tp);
         _lastSavedTs = now;
         _lastSavedPos = pos;
+
+        if (onLocationUpdate != null) {
+          onLocationUpdate(pos.latitude, pos.longitude);
+        }
+
       }
     }); 
 

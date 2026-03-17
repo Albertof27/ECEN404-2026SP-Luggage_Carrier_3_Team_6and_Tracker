@@ -18,6 +18,10 @@ const String svcRover  = '3f09d95b-7f10-4c6a-8f0d-15a74be2b9b5';
 const String chrWeight = 'a18f1f42-1f7d-4f62-9b9c-57e76a4c3140';
 const String chrEvents = 'b3a1f6d4-37db-4e7c-a7ac-b3e74c3f8e6a';
 
+const String chrLocation = 'e5b3c9f2-6d8e-4f1a-8c2d-2b9a1c3d4e5f';
+
+const String chrMove = 'c7d8e9f0-1a2b-3c4d-5e6f-7a8b9c0d1e2f';
+
 /// Device name filter you expect in advertisements.
 const String kTargetNameContains = 'Rover-01';
 //const String kTargetNameContains = '';
@@ -109,6 +113,9 @@ if (statuses[Permission.bluetoothScan]?.isDenied ?? true) {
   }
 
 }
+
+
+
 //FAKEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
 
   /*
@@ -136,6 +143,69 @@ if (statuses[Permission.bluetoothScan]?.isDenied ?? true) {
     });
   }
 */
+
+
+
+// THIS FUNCTION IS WHAT SENDS THE LOCATION TO THE PI
+
+
+Future<void> sendLocation(double lat, double lon) async {
+  if (!_connectingOrConnected) {
+    print("📱 [BLE] Not connected. Can't send location.");
+    return;
+  }
+
+  try {
+    // 1. Create a byte buffer for two 32-bit floats
+    final ByteData data = ByteData(8);
+    data.setFloat32(0, lat, Endian.little);
+    data.setFloat32(4, lon, Endian.little);
+
+    // 2. Convert to List<int> for the MethodChannel
+    final List<int> bytes = data.buffer.asUint8List().toList();
+
+    // 3. Match your BleBridge.write positional parameters:
+    // static Future<void> write(String svc, String chr, List<int> val, {bool withResponse=true})
+    await BleBridge.write(
+      svcRover,      // svc
+      chrLocation,   // chr
+      bytes,         // val
+      withResponse: true,
+    );
+
+    print("📱 [BLE] Location sent: $lat, $lon");
+  } catch (e) {
+    print("📱 [BLE] Write Error: $e");
+  }
+}
+
+
+
+
+Future<void> sendMoveCommand(String command) async {
+  if (!_connectingOrConnected) {
+    print("📱 [BLE] Not connected. Can't send move command.");
+    return;
+  }
+
+  try {
+    // Convert the string character (e.g., 'F') into a list of bytes
+    final List<int> bytes = command.codeUnits;
+
+    // Send it to the bridge
+    await BleBridge.write(
+      svcRover,      // Same service
+      chrMove,       // New movement characteristic
+      bytes,         // The encoded command
+      withResponse: false, // 'false' is usually better for rapid movement commands to reduce latency
+    );
+
+    print("📱 [BLE] Move command sent: $command");
+  } catch (e) {
+    print("📱 [BLE] Move Command Error: $e");
+  }
+}
+
 
 
 

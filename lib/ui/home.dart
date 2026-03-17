@@ -11,6 +11,7 @@ import '../state/auth_providers.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:rover_app/app_services.dart';
 import 'package:rover_app/models/trip.dart';
+import 'package:rover_app/ui/dpad_page.dart';
  
 
 
@@ -452,7 +453,34 @@ Padding(
     ],
   ),
 ),
-const SizedBox(height: 24),
+const SizedBox(height: 16),
+
+
+
+
+// --- NEW: D-PAD MANUAL CONTROL BUTTON ---
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 16),
+  child: SizedBox(
+    width: double.infinity, // Makes the button span the whole width
+    child: ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        backgroundColor: Colors.blueGrey.shade800, // Gives it a nice tech look
+        foregroundColor: Colors.white,
+        textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const DPadPage()),
+        );
+      },
+      icon: const Icon(Icons.gamepad),
+      label: const Text("Manual Rover Control"),
+    ),
+  ),
+),
+const SizedBox(height: 32),
 
 
 
