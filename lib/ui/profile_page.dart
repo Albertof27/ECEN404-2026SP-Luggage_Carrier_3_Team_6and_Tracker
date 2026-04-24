@@ -58,7 +58,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final rawChecklist = await repo.getLuggageChecklist();
     final history = await repo.getLuggageChecklistHistory();
 
-    // "New" if name empty and no age
+    
     final isNew = profile.name.trim().isEmpty && profile.age == null;
 
     setState(() {
@@ -93,36 +93,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
-/*
-  Future<void> _loadProfile() async {
-    try {
-      final repo = AppServices.I.userProfileRepo;
-      final profile = await repo.getProfile();
-
-      // "New" if name empty and default maxLoadLbs
-      final isNew = profile.name.trim().isEmpty && profile.age == null;
-
-      setState(() {
-        _profile = profile;
-        _nameController.text = profile.name;
-        _ageController.text = profile.age != null ? profile.age.toString() : '';
-        _isNewProfile = isNew;
-        _isEditing = isNew; // auto-enter edit mode if no info yet
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _loading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load profile: $e')),
-        );
-      }
-    }
-  }
-*/
- 
  
 
 
@@ -407,7 +377,7 @@ Row(
 ),
 const SizedBox(height: 12),
 
-// ---- THIS IS THE IMPORTANT PART ----
+// ----  ----
 if (_checklist.isEmpty) ...[
   Text(
     'No items yet. Add items to your luggage list.',
@@ -442,7 +412,7 @@ if (_checklist.isEmpty) ...[
     }).toList(),
   ),
 ],
-// ---- END IMPORTANT PART ----
+// ---- ----
 
 const SizedBox(height: 12),
 
@@ -467,137 +437,6 @@ Row(
 ),
 const SizedBox(height: 24),
 
-/*
-Text(
-  'Luggage Check List',
-  style: Theme.of(context).textTheme.titleMedium,
-),
-const SizedBox(height: 8),
-
-Row(
-  children: [
-    Expanded(
-      child: TextField(
-        controller: _newItemController,
-        decoration: const InputDecoration(
-          labelText: 'Add item',
-          border: OutlineInputBorder(),
-        ),
-        onSubmitted: (_) => _addChecklistItem(),
-      ),
-    ),
-    const SizedBox(width: 8),
-    IconButton(
-      icon: const Icon(Icons.add),
-      tooltip: 'Add item',
-      onPressed: _addChecklistItem,
-    ),
-  ],
-),
-const SizedBox(height: 12),
-
-if (_checklist.isEmpty)
-  Text(
-    'No items yet. Add items to your luggage list.',
-    style: Theme.of(context)
-        .textTheme
-        .bodySmall
-        ?.copyWith(color: Colors.grey[700]),
-  )
-
-
-
-
-if (_checklist.isEmpty)
-  Text(
-    'No items yet. Add items to your luggage list.',
-    style: Theme.of(context)
-        .textTheme
-        .bodySmall
-        ?.copyWith(color: Colors.grey[700]),
-  )
-else
-  Column(
-    children: _checklist.asMap().entries.map((entry) {
-      final idx = entry.key;
-      final item = entry.value;
-
-      return ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Checkbox(
-          value: item.checked,
-          onChanged: (val) {
-            setState(() {
-              _checklist[idx].checked = val ?? false;
-            });
-          },
-        ),
-        title: Text(item.text),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline),
-          tooltip: 'Remove item',
-          onPressed: () => _removeChecklistItem(idx),
-        ),
-      );
-    }).toList(),
-  ),
-
-
-/*else
-  Column(
-    children: _checklist.asMap().entries.map((entry) {
-      final idx = entry.key;
-      final item = entry.value;
-      return Row(
-        children: [
-          Expanded(
-            child: CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: item.checked,
-              onChanged: (val) {
-                setState(() {
-                  _checklist[idx].checked = val ?? false;
-                });
-              },
-              title: Text(item.text),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: 'Remove item',
-            onPressed: () => _removeChecklistItem(idx),
-          ),
-        ],
-      );
-    }).toList(),
-  ),
-
-*/
-const SizedBox(height: 12),
-
-Row(
-  children: [
-    Expanded(
-      child: ElevatedButton.icon(
-        onPressed: _checklist.isEmpty ? null : _saveChecklist,
-        icon: const Icon(Icons.save),
-        label: const Text('Save Checklist'),
-      ),
-    ),
-    const SizedBox(width: 8),
-    Expanded(
-      child: OutlinedButton.icon(
-        onPressed: _showChecklistHistoryPicker,
-        icon: const Icon(Icons.history),
-        label: const Text('Load Previous'),
-      ),
-    ),
-  ],
-),
-const SizedBox(height: 24),
-*/
-// -------------- END LUGGAGE CHECK LIST --------------
-
 
 
             ],
@@ -612,137 +451,3 @@ const SizedBox(height: 24),
 
 
 
-
-/*
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:rover_app/app_services.dart';
-import '../models/user_profile.dart';
-
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
-
-  @override
-  State<ProfilePage> createState() => _ProfilePageState();
-}
-
-class _ProfilePageState extends State<ProfilePage> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _maxLoadController = TextEditingController();
-
-  bool _loading = true;
-  UserProfile? _profile;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    try {
-      final repo = AppServices.I.userProfileRepo;
-      final profile = await repo.getProfile();
-
-      setState(() {
-        _profile = profile;
-        _nameController.text = profile.name;
-        _maxLoadController.text = profile.maxLoadLbs.toStringAsFixed(0);
-        _loading = false;
-      });
-    } catch (e) {
-      // handle error – show snackbar, etc.
-      setState(() {
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate() || _profile == null) return;
-
-    final updated = UserProfile(
-      uid: _profile!.uid,
-      name: _nameController.text.trim(),
-      email: _profile!.email, // keep same email
-      maxLoadLbs: double.tryParse(_maxLoadController.text) ?? 20,
-    );
-
-    await AppServices.I.userProfileRepo.saveProfile(updated);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile saved')),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_loading) {
-      return Scaffold(
-        appBar: AppBar(title: Text('Profile')),
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    final firebaseUser = FirebaseAuth.instance.currentUser;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              if (firebaseUser?.photoURL != null)
-                CircleAvatar(
-                  radius: 40,
-                  backgroundImage: NetworkImage(firebaseUser!.photoURL!),
-                ),
-              const SizedBox(height: 16),
-              Text('Email: ${_profile?.email ?? firebaseUser?.email ?? ''}'),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Please enter your name' : null,
-              ),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _maxLoadController,
-                decoration: const InputDecoration(
-                  labelText: 'Max Load (lbs)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  final value = double.tryParse(v ?? '');
-                  if (value == null || value <= 0) {
-                    return 'Enter a positive number';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-
-              ElevatedButton(
-                onPressed: _saveProfile,
-                child: const Text('Save'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-*/

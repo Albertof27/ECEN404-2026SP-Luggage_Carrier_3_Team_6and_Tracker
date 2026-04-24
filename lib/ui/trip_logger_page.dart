@@ -13,7 +13,7 @@ import 'package:rover_app/state/ble_controller_provider.dart';
 //import 'package:rover_app/ble_controller.dart';
 
 
-// --- Riverpod Providers (Assumed setup) ---
+// --- Riverpod Providers  ---
 // 1. Provides the stream of ALL trips (sorted by date)
 final allTripsStreamProvider = StreamProvider.autoDispose<List<Trip>>((ref) {
   return AppServices.I.repo.getTripsStream();
@@ -272,29 +272,7 @@ Future<void> _startRecording(BuildContext context, WidgetRef ref) async {
 
 
 
-/*
-  Future<void> _startRecording(BuildContext context, WidgetRef ref) async {
-    // 1. Refresh recording status
-    ref.read(isRecordingProvider.notifier).state = true;
-    
-    final name = "Trip ${DateTime.now().toLocal().toString().substring(0, 19)}";
-    
-    // 2. Call recorder start method
-    final id = await AppServices.I.recorder.start(name);
 
-    if (id == null) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Location permission/service required.")),
-      );
-      ref.read(isRecordingProvider.notifier).state = false; // Reset status on failure
-      return;
-    }
-
-    // 3. Select the new active trip
-    ref.read(selectedTripIdProvider.notifier).state = id;
-  }
-  */
 
   Future<void> _stopRecording(BuildContext context, WidgetRef ref) async {
     await AppServices.I.recorder.stop();

@@ -13,7 +13,7 @@ import '../bridge/ble_bridge.dart';
 import 'ble_state.dart';
 import 'dart:math' as math;
 
-/// === BLE UUIDs (keep here to avoid magic strings around the app) ===
+/// === BLE UUIDs  ===
 const String svcRover  = '3f09d95b-7f10-4c6a-8f0d-15a74be2b9b5';
 const String chrWeight = 'a18f1f42-1f7d-4f62-9b9c-57e76a4c3140';
 const String chrEvents = 'b3a1f6d4-37db-4e7c-a7ac-b3e74c3f8e6a';
@@ -21,6 +21,8 @@ const String chrEvents = 'b3a1f6d4-37db-4e7c-a7ac-b3e74c3f8e6a';
 const String chrLocation = 'e5b3c9f2-6d8e-4f1a-8c2d-2b9a1c3d4e5f';
 
 const String chrMove = 'c7d8e9f0-1a2b-3c4d-5e6f-7a8b9c0d1e2f';
+
+const String chrHeartbeat = 'd1e2f3a4-5b6c-7d8e-9f0a-1b2c3d4e5f6a';
 
 /// Device name filter you expect in advertisements.
 const String kTargetNameContains = 'Rover-01';
@@ -58,10 +60,14 @@ class BleController {
     // --- RSSI / distance helpers ---
   // Rolling window to smooth RSSI noise
   final List<int> _rssiWindow = <int>[];
-  static const int _rssiWindowSize = 5;
+  static const int _rssiWindowSize = 15;
 
   // Poll RSSI every second when connected
   Timer? _rssiPoll;
+
+  //timer for heartbeat
+  Timer? _heartbeatTimer;
+  static const Duration _heartbeatInterval = Duration(milliseconds: 500);
 
   // Track last out-of-range status to avoid spamming notifications
   bool _wasOutOfRange = false;
@@ -74,6 +80,32 @@ class BleController {
 
 
   // ---------------- Public API ----------------
+
+
+/// Sends a heartbeat signal to the Pi to indicate the app is still connected
+Future<void> _sendHeartbeat() async {
+  if (!_connectingOrConnected) return;
+  
+  try {
+    // Send a simple byte (0x01) as the heartbeat signal
+    // You can also use a timestamp or counter if needed
+    final List<int> heartbeatData = [0x01];
+    
+    await BleBridge.write(
+      svcRover,
+      chrHeartbeat,
+      heartbeatData,
+      withResponse: false, // Use false for speed, heartbeats are frequent
+    );
+    // Uncomment for debugging:
+     print("💓 [BLE] Heartbeat sent");
+  } catch (e) {
+    print("💔 [BLE] Heartbeat failed (will retry): $e");
+    //await disconnect();
+  }
+}
+
+
 
 ///FAKEEEEEEEEEEEEE
 Future<void> scanAndConnect() async {
@@ -95,7 +127,6 @@ if (statuses[Permission.bluetoothScan]?.isDenied ?? true) {
   
 
 
-  // TEMP: scan for EVERYTHING (no UUID filter)
   try {
     // 4. Start the scan (No redundant requestPermissions call here)
     await BleBridge.startScan(serviceUuids: []); 
@@ -115,34 +146,6 @@ if (statuses[Permission.bluetoothScan]?.isDenied ?? true) {
 }
 
 
-
-//FAKEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-
-  /*
-  //this is what you ui calls
-  Future<void> scanAndConnect() async {
-    // 1) Permissions are asked and if it fails it will let you know
-    try {
-      await BleBridge.requestPermissions();
-    } catch (_) {
-      ref.read(connectionStateProvider.notifier).state = 'perm-denied';
-      return;
-    }
-
-    // 2) Start filtered scan (by service UUID)
-    await BleBridge.startScan(serviceUuids: [svcRover]);
-    ref.read(connectionStateProvider.notifier).state = 'scanning';
-
-    // 3) Safety timeout: stop scan after 15s if nothing found
-    _scanTimer?.cancel();
-    _scanTimer = Timer(const Duration(seconds: 15), () async {
-      await BleBridge.stopScan();
-      if (!_connectingOrConnected) {
-        ref.read(connectionStateProvider.notifier).state = 'not-found';
-      }
-    });
-  }
-*/
 
 
 
@@ -213,14 +216,23 @@ Future<void> sendMoveCommand(String command) async {
 
   //this kills the scan if its not scanning anything to free up resources
   Future<void> disconnect() async {
+    print("🔌 [BLE] Disconnecting and cleaning up...");
     _scanTimer?.cancel();
+    _heartbeatTimer?.cancel();
     _connectingOrConnected = false;
+
+    ref.read(connectionStateProvider.notifier).state = 'disconnected'; 
+    ref.read(rssiProvider.notifier).state = null;
+    _wasOutOfRange = false;
+    _rssiWindow.clear();
+  
     await BleBridge.disconnect();
   }
   //this cancels the timer and the event subsrciption to prevent leaks
   void dispose() {
     _scanTimer?.cancel();
     _rssiPoll?.cancel();
+    _heartbeatTimer?.cancel();
     _sub?.cancel();
   }
 //--------------------------------------
@@ -286,6 +298,9 @@ Future<void> sendMoveCommand(String command) async {
           _rssiPoll = Timer.periodic(const Duration(seconds: 1), (_) {
             BleBridge.readRssi(); // triggers Android onReadRemoteRssi -> {type:'rssi', value:int}
           });
+
+
+    // ====================================
         
           
         
@@ -293,6 +308,7 @@ Future<void> sendMoveCommand(String command) async {
           // Any non-connected state: reset flags, clear RSSI, stop polling.
           _connectingOrConnected = false;
           _rssiPoll?.cancel();
+          _heartbeatTimer?.cancel();
           _rssiWindow.clear();
           ref.read(rssiProvider.notifier).state = null;
           _wasOutOfRange = false;
@@ -305,6 +321,18 @@ Future<void> sendMoveCommand(String command) async {
         BleBridge.setNotify(svcRover, chrWeight, true);
         BleBridge.setNotify(svcRover, chrEvents, true);
         NotifyBridge.requestPermission();
+        // ========== START HEARTBEAT HERE WITH DELAY ==========
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (_connectingOrConnected) {
+            _heartbeatTimer?.cancel();
+            _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
+              _sendHeartbeat();
+            });
+            _sendHeartbeat();  // Send first heartbeat
+            print('📱 [BLE] Heartbeat timer started after services discovered');
+          }
+        });
+        // =====================================================
         break;
       
       //this is the part that actually extracts the info from the rover that will then later be decoded

@@ -220,7 +220,7 @@ class RoverHome extends ConsumerWidget {
             constraints: const BoxConstraints(maxWidth: 420),
             child: Column(
               children: [
-                // --- Your existing STATUS CARD (unchanged) ---
+                // --- Your existing STATUS CARD  ---
                 Card(
                   elevation: 2,
                   margin: const EdgeInsets.all(16),
@@ -328,7 +328,7 @@ class RoverHome extends ConsumerWidget {
                   ),
                 ),
 
-                  // --- NEW: SELF TEST BUTTON ---
+                  // ---  SELF TEST BUTTON ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Align(
@@ -359,7 +359,7 @@ class RoverHome extends ConsumerWidget {
                   const SizedBox(height: 8),
 
 
-                // --- NEW: TRIPS DISTANCE GRAPH CARD ---
+                // --- TRIPS DISTANCE GRAPH CARD ---
                 Consumer(
                   builder: (context, ref, _) {
                     final tripsAsync = ref.watch(tripsStreamProvider);
@@ -458,7 +458,7 @@ const SizedBox(height: 16),
 
 
 
-// --- NEW: D-PAD MANUAL CONTROL BUTTON ---
+// --- D-PAD MANUAL CONTROL BUTTON ---
 Padding(
   padding: const EdgeInsets.symmetric(horizontal: 16),
   child: SizedBox(
@@ -466,7 +466,7 @@ Padding(
     child: ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 20),
-        backgroundColor: Colors.blueGrey.shade800, // Gives it a nice tech look
+        backgroundColor: Colors.blueGrey.shade800, 
         foregroundColor: Colors.white,
         textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),

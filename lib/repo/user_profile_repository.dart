@@ -95,24 +95,7 @@ class UserProfileRepository {
   }).toList();
 } 
 
-/*
-  Future<List<List<String>>> getLuggageChecklistHistory() async {
-    final doc = await _usersCol.doc(uid).get();
-    final data = doc.data();
 
-    if (data == null || data['luggageChecklistHistory'] == null) {
-      return [];
-    }
-
-    final rawList = data['luggageChecklistHistory'] as List<dynamic>;
-
-    return rawList
-        .map(
-          (e) => (e as List<dynamic>).map((s) => s.toString()).toList(),
-        )
-        .toList();
-  }
-*/
 
   Future<void> addChecklistToHistory(List<String> itemTexts) async {
   if (itemTexts.isEmpty) return;
@@ -126,75 +109,7 @@ class UserProfileRepository {
   });
 }
 
-/*
-  Future<void> addChecklistToHistory(List<String> itemTexts) async {
-    if (itemTexts.isEmpty) return;
 
-    await _usersCol.doc(uid).set(
-      {
-        'luggageChecklistHistory': FieldValue.arrayUnion([itemTexts]),
-      },
-      SetOptions(merge: true),
-    );
-  }
-
-  */
 }
 
 
-
-/*
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../models/user_profile.dart';
-
-class UserProfileRepository {
-  final String uid;
-  UserProfileRepository({required this.uid});
-  final _firestore = FirebaseFirestore.instance;
-  final _auth = FirebaseAuth.instance;
-
-  CollectionReference get _usersCol => _firestore.collection('users');
-/*
-  String get _uid {
-    final user = _auth.currentUser;
-    if (user == null) throw Exception('No user logged in');
-    return user.uid;
-  }
-  */
-
-  Future<UserProfile> getProfile() async {
-   // final uid = _uid;
-    final doc = await _usersCol.doc(uid).get();
-
-    if (!doc.exists) {
-      // Create a default profile from auth info
-      final user = _auth.currentUser!;
-      final profile = UserProfile(
-        uid: uid,
-        name: user.displayName ?? '',
-        email: user.email ?? '',
-        age: null,
-      );
-      await _usersCol.doc(uid).set(profile.toMap());
-      return profile;
-    }
-    
-    final data = doc.data()!;
-
-    return UserProfile.fromMap(uid, doc.data() as Map<String, dynamic>);
-  }
-
-  Future<void> saveProfile(UserProfile profile) async {
-    await _usersCol.doc(profile.uid).set(profile.toMap(), SetOptions(merge: true));
-  }
-
-  Stream<UserProfile?> profileStream() {
-   
-    return _usersCol.doc(uid).snapshots().map((doc) {
-      if (!doc.exists || doc.data() == null) return null;
-      return UserProfile.fromMap(uid, doc.data() as Map<String, dynamic>);
-    });
-  }
-}
-*/

@@ -6,7 +6,7 @@ import 'package:rover_app/models/track_point.dart';
 import 'package:rover_app/utils/geo.dart';
 
 class TripRepository {
-  // remove static const box names – they’ll be computed per user
+  
   late final String _tripsBoxName;
   late final String _pointsBoxName;
 

@@ -8,7 +8,7 @@ final weightProvider          = StateProvider<double>((_) => 0.0);
 //this repreents events like if the rover is overwieght and stuff
 final eventsBitsProvider      = StateProvider<int>((_) => 0);
 
-
+  
 
 // User/feature-configurable threshold (lbs). Default: 20 lb
 final weightThresholdProvider = StateProvider<double>((_) => 20.0);
